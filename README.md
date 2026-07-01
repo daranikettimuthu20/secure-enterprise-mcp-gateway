@@ -42,21 +42,8 @@ MCP servers execute whatever arguments a model sends them, with no built-in poli
 
 ### Architecture
 
-Client / Claude
-      |
-      v
-  [ MCP Gateway ]  --- FastAPI + OAuth2/JWT
-      |  1. authenticate (JWT -> Principal.role)
-      |  2. authorize     (RBAC policy engine, policies/roles.yaml)
-      |  3. scan args     (prompt injection scanner)
-      |  4. scan args     (PII / secrets scanner - block/redact/allow by role)
-      |  5. forward       (only if 1-4 pass)
-      v
-  [ Upstream MCP tool server(s) ]
-      |
-      v
-  6. scan response (PII/secrets, output-side leakage)
-  7. audit log every decision (logs/audit.log, structured JSON)
+<img width="696" height="386" alt="{46720C79-4719-4EC7-9FCA-007F39DE41C2}" src="https://github.com/user-attachments/assets/934367cb-7ce5-4aaa-aa80-65e825964790" />
+
 
 ### Quick start
 
