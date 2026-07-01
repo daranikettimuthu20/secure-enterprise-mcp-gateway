@@ -125,3 +125,5 @@ kubectl apply -f k8s/40-ingress.yaml
   `gateway/security/injection_scanner.py`.
 - Swap `policies/roles.yaml` + `PolicyEngine` for OPA/Rego or AWS Cedar for
   more expressive policy logic.
+
+  Live demo: https://mcp-gateway-vuo4.onrender.com/docs
