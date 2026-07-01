@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mcp-gateway
+  namespace: mcp-gateway
+  labels:
+    app: mcp-gateway
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: mcp-gateway
+  template:
+    metadata:
+      labels:
+        app: mcp-gateway
+        role: mcp-gateway
+    spec:
+      containers:
+        - name: mcp-gateway
+          image: your-registry/mcp-gateway:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: UPSTREAM_DEMO_URL
+              value: "http://mcp-demo-upstream.mcp-gateway.svc.cluster.local:9000"
+            - name: JWT_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-secrets
+                  key: JWT_SECRET_KEY
+            - name: INJECTION_BLOCK_THRESHOLD
+              value: "0.6"
+            - name: PII_ACTION_DEFAULT
+              value: "block"
+          resources:
+            requests: { cpu: "100m", memory: "128Mi" }
+            limits: { cpu: "500m", memory: "256Mi" }
+          readinessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /healthz, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 20
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mcp-gateway
+  namespace: mcp-gateway
+spec:
+  selector:
+    app: mcp-gateway
+  ports:
+    - port: 8080
+      targetPort: 8080
+  type: ClusterIP

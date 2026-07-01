@@ -1,0 +1,14 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir fastapi uvicorn[standard]
+
+COPY demo_upstream/ ./demo_upstream/
+
+RUN useradd -m -u 1000 mcpserver
+USER mcpserver
+
+EXPOSE 9000
+CMD ["uvicorn", "demo_upstream.server:app", "--host", "0.0.0.0", "--port", "9000"]

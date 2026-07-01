@@ -1,0 +1,60 @@
+# Isolation core: the upstream MCP tool-server pods accept traffic ONLY from
+# gateway pods (identified by the "role: mcp-gateway" label) - not from each
+# other, not from anything else in the cluster. This is the concrete
+# "blast radius containment" control: even if a tool call slips past the
+# scanners, the compromised path is gateway -> one upstream, never
+# upstream -> upstream or arbitrary-pod -> upstream.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-gateway-to-upstream-only
+  namespace: mcp-gateway
+spec:
+  podSelector:
+    matchLabels:
+      role: mcp-tool-server
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    - from:
+        - podSelector:
+              matchLabels:
+                role: mcp-gateway
+      ports:
+        - protocol: TCP
+          port: 9000
+  egress:
+    # Tool servers get DNS resolution and nothing else by default.
+    # Add explicit egress rules per-upstream as each one needs real
+    # external access (e.g. an email-sending tool needs SMTP egress).
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-gateway-only
+  namespace: mcp-gateway
+spec:
+  podSelector:
+    matchLabels:
+      role: mcp-gateway
+  policyTypes:
+    - Ingress
+  ingress:
+    # Only the ingress controller (or same-namespace clients) can reach
+    # the gateway itself; adjust the namespaceSelector to match your
+    # ingress-nginx / cloud LB controller's namespace.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080

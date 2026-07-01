@@ -1,0 +1,42 @@
+# RBAC policy for the MCP Gateway.
+# One entry per role. `tools` lists what each role may call.
+# Optional `constraints` restrict specific arguments (simple prefix/equality
+# checks here; swap in a rules engine like OPA/Rego for production).
+
+roles:
+  admin:
+    description: "Full access, used for break-glass and gateway operators."
+    tools:
+      - "*"                      # wildcard: every tool on every upstream
+    pii_action: allow            # admins can see PII in tool args (still logged)
+
+  analyst:
+    description: "Human analysts querying data via agents."
+    tools:
+      - "run_query"
+      - "read_file"
+    constraints:
+      read_file:
+        path_prefix: "/data/shared/"
+    pii_action: redact
+
+  support_bot:
+    description: "Customer-support agent, narrow and low-privilege."
+    tools:
+      - "send_email"
+      - "read_file"
+    constraints:
+      read_file:
+        path_prefix: "/data/public/"
+      send_email:
+        domain_allowlist: ["mycompany.com", "support.mycompany.com"]
+    pii_action: redact
+
+  readonly_agent:
+    description: "Fully sandboxed agent for demos/evals - read-only, no PII allowed."
+    tools:
+      - "read_file"
+    constraints:
+      read_file:
+        path_prefix: "/data/public/"
+    pii_action: block
